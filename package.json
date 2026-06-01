@@ -1,0 +1,11 @@
+{
+  "name": "parcel",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@11.1.2",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build && pnpm --filter @parcel/sdk build",
+    "typecheck": "pnpm -r typecheck"
+  }
+}

@@ -1,0 +1,12 @@
+[package]
+name = "pay-on-delivery"
+version = "0.0.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+# Kept deliberately empty. The real `rialo` crate will replace the
+# RialoRuntime trait in src/runtime.rs once testnet ships.

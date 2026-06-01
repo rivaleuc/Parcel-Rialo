@@ -1,0 +1,17 @@
+node_modules
+.next
+
+# Local editor / agent config (machine-specific paths)
+.claude
+dist
+.turbo
+.DS_Store
+.env
+.env.local
+*.log
+
+# Rust
+target
+Cargo.lock
+
+*.tsbuildinfo
