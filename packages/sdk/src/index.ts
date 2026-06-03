@@ -12,6 +12,17 @@ export type EscrowStatus =
   | "refunded"     // deadline passed without delivery, refund sent to buyer
   | "disputed";    // optional: human flagged
 
+export interface EscrowEvent {
+  at: number;               // unix seconds
+  kind:
+    | "created"             // funds locked
+    | "carrier_update"      // a new carrier status was observed
+    | "released"            // paid to seller
+    | "refunded";           // returned to buyer
+  detail: string;           // human-readable line
+  carrierStatus?: string;   // raw carrier status, when relevant
+}
+
 export interface Escrow {
   id: EscrowId;
   buyer: string;
@@ -24,6 +35,7 @@ export interface Escrow {
   createdAt: number;
   resolvedAt?: number;
   lastCarrierStatus?: string;
+  history: EscrowEvent[];  // ordered, append-only
 }
 
 export interface CreateEscrowInput {
@@ -67,6 +79,8 @@ export function createSimulatorClient(cfg: SimulatorConfig): ParcelClient {
   return {
     async createEscrow(input) {
       const id = crypto.randomUUID();
+      const t = now();
+      const amountHuman = (Number(input.amount) / 1_000_000).toFixed(2);
       const e: Escrow = {
         id,
         buyer: input.buyer,
@@ -74,9 +88,16 @@ export function createSimulatorClient(cfg: SimulatorConfig): ParcelClient {
         amount: input.amount,
         tracking: input.tracking,
         carrier: input.carrier,
-        deadline: now() + input.deadlineSeconds,
+        deadline: t + input.deadlineSeconds,
         status: "funded",
-        createdAt: now(),
+        createdAt: t,
+        history: [
+          {
+            at: t,
+            kind: "created",
+            detail: `${amountHuman} USDC locked, watching ${input.tracking}`,
+          },
+        ],
       };
       store.set(id, e);
       return e;
@@ -93,17 +114,39 @@ export function createSimulatorClient(cfg: SimulatorConfig): ParcelClient {
       if (e.status === "delivered" || e.status === "refunded") return e;
 
       // Reactive logic: poll carrier, then check deadline.
+      const t = now();
       const carrierStatus = await pollCarrier(e.tracking, e.carrier).catch(() => "unknown");
+      const amountHuman = (Number(e.amount) / 1_000_000).toFixed(2);
+
+      // Record a carrier update only when the observed status changed.
+      if (carrierStatus !== e.lastCarrierStatus) {
+        e.history.push({
+          at: t,
+          kind: "carrier_update",
+          detail: `Carrier reported "${carrierStatus.replace("_", " ")}"`,
+          carrierStatus,
+        });
+      }
       e.lastCarrierStatus = carrierStatus;
 
       if (carrierStatus === "delivered") {
         e.status = "delivered";
-        e.resolvedAt = now();
+        e.resolvedAt = t;
+        e.history.push({
+          at: t,
+          kind: "released",
+          detail: `${amountHuman} USDC released to ${e.seller}`,
+        });
       } else if (carrierStatus === "in_transit" || carrierStatus === "picked_up") {
         e.status = "in_transit";
-      } else if (now() >= e.deadline) {
+      } else if (t >= e.deadline) {
         e.status = "refunded";
-        e.resolvedAt = now();
+        e.resolvedAt = t;
+        e.history.push({
+          at: t,
+          kind: "refunded",
+          detail: `Deadline passed, ${amountHuman} USDC refunded to ${e.buyer}`,
+        });
       }
 
       store.set(id, e);

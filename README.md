@@ -1,21 +1,43 @@
 # Parcel
 
-Settlement infrastructure for physical delivery. Buyer locks USDC, the contract watches the carrier API itself, and funds release the moment the package is delivered. No keeper bots, no oracle stack, no human signing a "release" button.
+Settlement infrastructure for physical delivery. The buyer locks USDC, the contract watches the carrier API by itself, and the funds release the moment the package is delivered. No keeper bots, no oracle stack, no human signing a "release" button.
 
-Built on Rialo because Rialo is the only L1 where a smart contract can call an HTTP endpoint and sleep for thirty days without external middleware. The contract is the entire infrastructure.
+Built on Rialo, the one L1 where a smart contract can call an HTTP endpoint and sleep for thirty days without external middleware. On Parcel the contract is the entire infrastructure.
 
 ## Why this exists
 
-Cross-border commerce settles on trust and chargebacks. Buyer sends money, seller ships, somebody waits. Crypto payments solve the rails but not the settlement: who decides the funds release when the package lands? Today the answer is a multisig, a keeper service, or an oracle network duct-taped to a smart contract. Each one is a point of failure and a recurring cost.
+Cross-border commerce settles on trust and chargebacks. The buyer sends money, the seller ships, somebody waits. Crypto payments solved the rails but not the settlement: who decides the funds release when the package actually lands? Today that answer is a multisig, a keeper service, or an oracle network duct-taped onto a smart contract. Each one is a recurring cost and a point of failure.
 
-Parcel treats settlement as a workflow that lives inside the chain. The contract polls the carrier directly, holds the funds, releases on delivered, refunds on timeout. One artifact. No off-chain dependencies.
+Parcel treats settlement as a workflow that lives inside the chain. The contract polls the carrier directly, holds the funds, releases on delivered, refunds on timeout. One artifact, no off-chain dependencies.
+
+## Lifecycle
+
+```
+  buyer locks USDC
+        │
+        ▼
+   ┌─────────┐      carrier: in_transit      ┌────────────┐
+   │ FUNDED  │ ────────────────────────────▶ │ IN TRANSIT │
+   └─────────┘                               └────────────┘
+        │                                        │
+        │ deadline passes                        │ carrier: delivered
+        ▼                                        ▼
+   ┌──────────┐                            ┌────────────┐
+   │ REFUNDED │                            │ DELIVERED  │
+   │ → buyer  │                            │ → seller   │
+   └──────────┘                            └────────────┘
+```
+
+The contract re-arms a native timer after every check and wakes itself back up. The carrier call is a native HTTP instruction. Nothing outside the contract moves the state forward.
 
 ## What's in here
 
-- `contracts/pay-on-delivery` — Rust contract expressing the escrow lifecycle against a Rialo-shaped runtime trait. Real `rialo` crate gets wired in when public testnet ships.
-- `web` — Next.js app for creating escrows and watching status.
-- `packages/sdk` — TypeScript client. Simulation backend today, swaps to Rialo RPC when available.
+- `contracts/pay-on-delivery`: Rust contract expressing the escrow lifecycle against a Rialo-shaped runtime trait (`http_get_json`, `schedule_after`, token transfers). The real `rialo` crate gets wired in when the public testnet ships. Logic is covered by tests today.
+- `packages/sdk`: TypeScript client. Simulation backend now, swaps to a Rialo RPC client later. The public interface stays the same.
+- `web`: Next.js app to create escrows and watch them settle live, with a stage bar and an event timeline.
 
 ## Status
 
-Rialo testnet is not yet public. The contract logic is frozen; the SDK runs against a local simulator so the product is demoable end to end. The day the testnet opens, only the runtime adapter changes.
+Rialo testnet is not public yet, and the `rialo` crate on crates.io is still a stub. So the contract logic is frozen against a runtime trait, and the SDK runs on a local simulator that polls a mock carrier. The product is demoable end to end today. The day the testnet opens, the only thing that changes is the runtime adapter: one Rust impl and one SDK backend.
+
+Not done yet, on purpose: wallet connection, on-chain persistence, and the real Rialo runtime. All three wait on testnet access.
