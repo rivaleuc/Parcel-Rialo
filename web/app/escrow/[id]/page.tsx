@@ -12,6 +12,7 @@ export default function EscrowDetailPage({
 }) {
   const { id } = use(params);
   const [escrow, setEscrow] = useState<Escrow | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ticking, setTicking] = useState(false);
 
@@ -20,9 +21,15 @@ export default function EscrowDetailPage({
     async function load() {
       try {
         const e = await getClient().getEscrow(id);
-        if (!cancelled) setEscrow(e);
+        if (!cancelled) {
+          setEscrow(e);
+          setLoaded(true);
+        }
       } catch (err) {
-        if (!cancelled) setError(String(err));
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+          setLoaded(true);
+        }
       }
     }
     load();
@@ -47,11 +54,28 @@ export default function EscrowDetailPage({
     return () => clearInterval(i);
   }, [id, escrow?.status]);
 
-  if (error) return <main className="card text-red-700">{error}</main>;
-  if (!escrow)
+  if (!loaded) {
     return (
-      <main className="card text-[color:var(--color-ink-soft)]">Loading...</main>
+      <main className="card animate-pulse">
+        <div className="h-6 w-48 bg-[color:var(--color-line)] rounded" />
+        <div className="mt-3 h-4 w-32 bg-[color:var(--color-line-soft)] rounded" />
+      </main>
     );
+  }
+  if (!escrow) {
+    return (
+      <main className="card text-center py-16">
+        <div className="text-base font-semibold">Escrow not found</div>
+        <p className="mt-1 text-sm text-[color:var(--color-ink-soft)]">
+          This escrow may have been created in a different browser, or local
+          state was cleared.
+        </p>
+        <a href="/escrow/new" className="btn mt-5 inline-flex">
+          Create a new one
+        </a>
+      </main>
+    );
+  }
 
   const amount = (Number(escrow.amount) / 1_000_000).toFixed(2);
   const deadlineDate = new Date(escrow.deadline * 1000).toLocaleString();
@@ -71,6 +95,15 @@ export default function EscrowDetailPage({
           {escrow.status.replace("_", " ")}
         </span>
       </header>
+
+      {error && (
+        <div
+          className="rounded-lg border border-[#f8c8c8] bg-[#fcefef] text-[#7a1f1f] text-sm font-semibold px-4 py-3"
+          role="status"
+        >
+          Carrier poll failed: {error}. Retrying.
+        </div>
+      )}
 
       <StageBar status={escrow.status} />
 

@@ -62,11 +62,35 @@ export interface ParcelClient {
 interface SimulatorConfig {
   carrierBaseUrl: string; // e.g. "/api/mock-carrier" or full URL for ups proxy
   now?: () => number;
+  /**
+   * Optional key/value store for persistence across reloads. Pass `localStorage`
+   * in the browser; omit on the server to fall back to in-memory only.
+   */
+  storage?: { getItem(k: string): string | null; setItem(k: string, v: string): void };
+  storageKey?: string;
 }
 
 export function createSimulatorClient(cfg: SimulatorConfig): ParcelClient {
-  const store = new Map<EscrowId, Escrow>();
   const now = cfg.now ?? (() => Math.floor(Date.now() / 1000));
+  const key = cfg.storageKey ?? "parcel.escrows.v1";
+
+  // Hydrate from storage on boot. Bad JSON is silently dropped.
+  const store = new Map<EscrowId, Escrow>();
+  if (cfg.storage) {
+    try {
+      const raw = cfg.storage.getItem(key);
+      if (raw) {
+        const arr = JSON.parse(raw) as Escrow[];
+        for (const e of arr) store.set(e.id, e);
+      }
+    } catch {}
+  }
+  function persist() {
+    if (!cfg.storage) return;
+    try {
+      cfg.storage.setItem(key, JSON.stringify(Array.from(store.values())));
+    } catch {}
+  }
 
   async function pollCarrier(tracking: string, carrier: "mock" | "ups"): Promise<string> {
     const url = `${cfg.carrierBaseUrl}/${encodeURIComponent(tracking)}?carrier=${carrier}`;
@@ -78,6 +102,21 @@ export function createSimulatorClient(cfg: SimulatorConfig): ParcelClient {
 
   return {
     async createEscrow(input) {
+      // Validation. These are checks the on-chain contract will enforce too;
+      // the SDK rejects early so the UI can show a meaningful error.
+      if (!input.tracking.trim()) throw new Error("tracking id is required");
+      if (!input.buyer.trim() || !input.seller.trim())
+        throw new Error("buyer and seller are required");
+      let amt: bigint;
+      try {
+        amt = BigInt(input.amount);
+      } catch {
+        throw new Error("amount must be an integer (in USDC base units)");
+      }
+      if (amt <= 0n) throw new Error("amount must be greater than zero");
+      if (input.deadlineSeconds <= 0)
+        throw new Error("deadline must be in the future");
+
       const id = crypto.randomUUID();
       const t = now();
       const amountHuman = (Number(input.amount) / 1_000_000).toFixed(2);
@@ -100,6 +139,7 @@ export function createSimulatorClient(cfg: SimulatorConfig): ParcelClient {
         ],
       };
       store.set(id, e);
+      persist();
       return e;
     },
     async getEscrow(id) {
@@ -150,6 +190,7 @@ export function createSimulatorClient(cfg: SimulatorConfig): ParcelClient {
       }
 
       store.set(id, e);
+      persist();
       return e;
     },
   };
