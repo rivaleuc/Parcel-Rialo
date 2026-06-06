@@ -27,9 +27,9 @@ export default function Home() {
           Escrow that releases itself the moment your package is delivered.
         </h1>
         <p className="mt-6 text-lg md:text-xl text-[color:var(--color-ink-soft)] max-w-2xl mx-auto leading-relaxed">
-          The buyer locks USDC. The contract polls the carrier on its own,
-          holds the funds, pays the seller on delivery, refunds on timeout.
-          No keeper bot, no oracle network, no human clicking release.
+          The buyer locks USDC. The contract reads the carrier directly
+          through Rialo's HTTPS Pulse, holds the funds, pays the seller on
+          delivery, refunds on timeout. No keeper bot, no oracle, no relayer.
         </p>
         <div className="mt-9 flex gap-3 justify-center">
           <a className="btn" href="/escrow/new">
@@ -103,7 +103,7 @@ export default function Home() {
             {
               n: "02",
               t: "Contract watches the carrier",
-              d: "A native HTTP call reads the carrier endpoint every few minutes. The contract sleeps between checks and wakes itself.",
+              d: "Rialo's HTTPS Pulse reads the carrier endpoint every few minutes. The contract sleeps between checks and wakes itself.",
             },
             {
               n: "03",
@@ -129,7 +129,7 @@ export default function Home() {
         <div>
           <div className="eyebrow">The contract</div>
           <h2 className="mt-3 text-3xl font-bold tracking-tight">
-            The HTTP call and the timer are native.
+            HTTPS Pulse and the timer, both native.
           </h2>
           <p className="mt-4 text-[color:var(--color-ink-soft)] leading-relaxed">
             Rialo lets a contract call the internet and sleep on a schedule as

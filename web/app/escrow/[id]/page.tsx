@@ -110,8 +110,8 @@ export default function EscrowDetailPage({
       </div>
 
       <p className="text-xs text-[color:var(--color-ink-faint)] max-w-2xl">
-        On Rialo the contract drives this loop itself: a native HTTP call reads
-        the carrier, a native timer puts it back to sleep. Here the page ticks
+        On Rialo the contract drives this loop itself: HTTPS Pulse reads the
+        carrier, a native timer puts it back to sleep. Here the page ticks
         every three seconds to stand in for the chain.
       </p>
     </main>

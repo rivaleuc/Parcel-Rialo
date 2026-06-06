@@ -2,7 +2,7 @@
 
 Settlement infrastructure for physical delivery. The buyer locks USDC, the contract watches the carrier API by itself, and the funds release the moment the package is delivered. No keeper bots, no oracle stack, no human signing a "release" button.
 
-Built on Rialo, the one L1 where a smart contract can call an HTTP endpoint and sleep for thirty days without external middleware. On Parcel the contract is the entire infrastructure.
+Built on Rialo. The contract reads the carrier directly through Rialo's HTTPS Pulse and re-arms a native timer between checks. No oracle, no keeper, no relayer. The contract is the entire infrastructure.
 
 ## Why this exists
 
@@ -28,7 +28,7 @@ Parcel treats settlement as a workflow that lives inside the chain. The contract
    └──────────┘                            └────────────┘
 ```
 
-The contract re-arms a native timer after every check and wakes itself back up. The carrier call is a native HTTP instruction. Nothing outside the contract moves the state forward.
+The contract re-arms a native timer after every check and wakes itself back up. The carrier call goes through Rialo's HTTPS Pulse, a protocol-level HTTP instruction the network witnesses. Nothing outside the contract moves the state forward.
 
 ## What's in here
 
