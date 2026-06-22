@@ -1,19 +1,15 @@
 "use client";
 
-import { createSimulatorClient, type ParcelClient } from "@parcel/sdk";
+import { createHttpClient, type ParcelClient } from "@parcel/sdk";
 
-// Single shared simulator instance for the whole client session. Persists to
-// localStorage so escrows survive a refresh; on Rialo testnet this is replaced
-// by a real RPC-backed client and persistence lives on chain.
+// Talks to the Next.js escrow API. The token comes from the auth layer (a Privy
+// access token in production, the dev user id locally). Escrow state lives
+// server-side now, owner-scoped, replacing the old localStorage simulator. On
+// Rialo testnet this same client points at an RPC-backed endpoint.
 
-let _client: ParcelClient | null = null;
-
-export function getClient(): ParcelClient {
-  if (!_client) {
-    _client = createSimulatorClient({
-      carrierBaseUrl: "/api/mock-carrier",
-      storage: typeof window !== "undefined" ? window.localStorage : undefined,
-    });
-  }
-  return _client;
+export function makeClient(getToken: () => Promise<string | null>): ParcelClient {
+  return createHttpClient({
+    baseUrl: "/api/escrows",
+    getToken,
+  });
 }

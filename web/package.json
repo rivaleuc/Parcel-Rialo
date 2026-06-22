@@ -10,13 +10,17 @@
   },
   "dependencies": {
     "@parcel/sdk": "workspace:*",
+    "@privy-io/react-auth": "^3.32.1",
+    "@privy-io/server-auth": "^1.32.5",
     "next": "15.5.19",
+    "pg": "^8.22.0",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.0",
     "@types/node": "22.10.5",
+    "@types/pg": "^8.20.0",
     "@types/react": "19.0.7",
     "@types/react-dom": "19.0.3",
     "tailwindcss": "4.3.0",

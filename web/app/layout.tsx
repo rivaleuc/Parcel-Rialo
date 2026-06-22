@@ -1,5 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { Providers } from "@/lib/auth";
+import { AuthButton } from "./auth-button";
 
 export const metadata: Metadata = {
   title: "Parcel — delivery-settled escrow on Rialo",
@@ -23,19 +25,21 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <Providers>
         <header className="border-b border-[color:var(--color-line)] bg-white/70 backdrop-blur-sm sticky top-0 z-10">
           <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
             <a href="/" className="flex items-center gap-2.5">
               <Logo />
               <span className="text-[17px] font-extrabold tracking-tight">Parcel</span>
             </a>
-            <nav className="flex items-center gap-7 text-sm font-semibold text-[color:var(--color-ink-soft)]">
+            <nav className="flex items-center gap-5 text-sm font-semibold text-[color:var(--color-ink-soft)]">
               <a href="/escrows" className="hover:text-[color:var(--color-ink)]">
                 Escrows
               </a>
-              <a href="/escrow/new" className="btn h-9 px-4">
+              <a href="/escrow/new" className="hover:text-[color:var(--color-ink)]">
                 New escrow
               </a>
+              <AuthButton />
             </nav>
           </div>
         </header>
@@ -43,9 +47,11 @@ export default function RootLayout({
         <footer className="max-w-5xl mx-auto px-6 py-10 border-t border-[color:var(--color-line)] mt-10">
           <p className="text-xs text-[color:var(--color-ink-faint)] font-medium">
             Parcel is settlement infrastructure, not a financial product. Built
-            on Rialo. Running against a local simulator until public testnet.
+            on Rialo. Escrow state is server-backed; on-chain settlement lands
+            when the Rialo testnet opens.
           </p>
         </footer>
+        </Providers>
       </body>
     </html>
   );

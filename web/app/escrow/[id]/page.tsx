@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { use } from "react";
-import { getClient } from "@/lib/client";
+import { makeClient } from "@/lib/client";
+import { useAuth } from "@/lib/auth";
 import type { Escrow } from "@parcel/sdk";
 
 export default function EscrowDetailPage({
@@ -11,16 +12,19 @@ export default function EscrowDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const { ready, userId, login, getToken } = useAuth();
+  const client = useMemo(() => makeClient(getToken), [getToken]);
   const [escrow, setEscrow] = useState<Escrow | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ticking, setTicking] = useState(false);
 
   useEffect(() => {
+    if (!userId) return;
     let cancelled = false;
     async function load() {
       try {
-        const e = await getClient().getEscrow(id);
+        const e = await client.getEscrow(id);
         if (!cancelled) {
           setEscrow(e);
           setLoaded(true);
@@ -33,26 +37,40 @@ export default function EscrowDetailPage({
       }
     }
     load();
-  }, [id]);
+  }, [client, id, userId]);
 
   // Auto-tick every 3 seconds while not resolved. On Rialo this happens inside
-  // the chain — here the UI nudges the simulator on the user's behalf.
+  // the chain itself; here the UI nudges the server-authoritative tick.
   useEffect(() => {
     if (!escrow) return;
     if (escrow.status === "delivered" || escrow.status === "refunded") return;
     const i = setInterval(async () => {
       setTicking(true);
       try {
-        const next = await getClient().tick(id);
+        const next = await client.tick(id);
         setEscrow(next);
+        setError(null);
       } catch (err) {
-        setError(String(err));
+        setError(err instanceof Error ? err.message : String(err));
       } finally {
         setTicking(false);
       }
     }, 3_000);
     return () => clearInterval(i);
-  }, [id, escrow?.status]);
+  }, [client, id, escrow?.status]);
+
+  if (ready && !userId) {
+    return (
+      <main>
+        <div className="card text-center py-16">
+          <h1 className="text-xl font-bold">Sign in to view this escrow</h1>
+          <button onClick={login} className="btn mt-5 inline-flex">
+            Sign in
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   if (!loaded) {
     return (

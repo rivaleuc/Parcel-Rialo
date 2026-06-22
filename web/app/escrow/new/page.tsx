@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { getClient } from "@/lib/client";
+import { useMemo, useState } from "react";
+import { makeClient } from "@/lib/client";
+import { useAuth } from "@/lib/auth";
 
 type Form = {
-  buyer: string;
   seller: string;
   amount: string;
   tracking: string;
@@ -15,7 +15,6 @@ type Form = {
 
 function validate(f: Form): Partial<Record<keyof Form, string>> {
   const errs: Partial<Record<keyof Form, string>> = {};
-  if (!f.buyer.trim()) errs.buyer = "Required";
   if (!f.seller.trim()) errs.seller = "Required";
   if (!f.tracking.trim()) errs.tracking = "Required";
   const amt = Number(f.amount);
@@ -27,11 +26,12 @@ function validate(f: Form): Partial<Record<keyof Form, string>> {
 
 export default function NewEscrowPage() {
   const router = useRouter();
+  const { ready, userId, label, login, getToken } = useAuth();
+  const client = useMemo(() => makeClient(getToken), [getToken]);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [form, setForm] = useState<Form>({
-    buyer: "buyer.rialo",
     seller: "seller.rialo",
     amount: "100",
     tracking: "DEMO-FAST-001",
@@ -46,10 +46,12 @@ export default function NewEscrowPage() {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
+    if (!userId) return;
     setSubmitting(true);
     try {
-      const escrow = await getClient().createEscrow({
-        buyer: form.buyer.trim(),
+      const escrow = await client.createEscrow({
+        owner: userId,
+        buyer: userId,
         seller: form.seller.trim(),
         amount: String(BigInt(Math.round(Number(form.amount) * 1_000_000))),
         tracking: form.tracking.trim(),
@@ -68,6 +70,22 @@ export default function NewEscrowPage() {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
+  if (ready && !userId) {
+    return (
+      <main className="max-w-xl">
+        <div className="card text-center py-16">
+          <h1 className="text-xl font-bold">Sign in to lock funds</h1>
+          <p className="mt-2 text-sm text-[color:var(--color-ink-soft)]">
+            Escrows are tied to your account. Sign in to create one.
+          </p>
+          <button onClick={login} className="btn mt-5 inline-flex">
+            Sign in
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="max-w-xl">
       <h1 className="text-3xl font-extrabold tracking-tight">New escrow</h1>
@@ -78,10 +96,13 @@ export default function NewEscrowPage() {
       <form onSubmit={submit} className="card mt-8 space-y-5" noValidate>
         <div className="grid grid-cols-2 gap-4">
           <Field
-            label="Buyer"
-            error={errors.buyer}
+            label="Buyer (you)"
             input={
-              <input className="input" value={form.buyer} onChange={(e) => set("buyer", e.target.value)} />
+              <input
+                className="input bg-[color:var(--color-line-soft)] text-[color:var(--color-ink-soft)]"
+                value={label ?? userId ?? ""}
+                disabled
+              />
             }
           />
           <Field

@@ -33,11 +33,18 @@ The contract re-arms a native timer after every check and wakes itself back up. 
 ## What's in here
 
 - `contracts/pay-on-delivery`: Rust contract expressing the escrow lifecycle against a Rialo-shaped runtime trait (`http_get_json`, `schedule_after`, token transfers). The real `rialo` crate gets wired in when the public testnet ships. Logic is covered by tests today.
-- `packages/sdk`: TypeScript client. Simulation backend now, swaps to a Rialo RPC client later. The public interface stays the same.
-- `web`: Next.js app to create escrows and watch them settle live, with a stage bar and an event timeline.
+- `packages/sdk`: TypeScript client and the shared, pure lifecycle (validation, state transitions, carrier polling) used by both the server and the simulator. Two backends: an HTTP client against the app API, and a standalone simulator.
+- `web`: Next.js app. Privy auth (email, Google, wallet), a server-backed escrow API, and a dashboard with a stage bar and an event timeline.
+
+## Architecture today
+
+- Auth is Privy. Escrows are owner-scoped: you only see your own.
+- The escrow API (`/api/escrows`) is server-authoritative. The settlement step (`/tick`) polls the carrier server-side and applies the same pure lifecycle the on-chain contract will run.
+- Storage is Postgres when `DATABASE_URL` is set, an in-memory store otherwise. Same interface either way.
+- Without credentials the app still runs end to end: a local dev identity stands in for Privy, and the in-memory store stands in for Postgres. See `web/.env.example`.
 
 ## Status
 
-Rialo testnet is not public yet, and the `rialo` crate on crates.io is still a stub. So the contract logic is frozen against a runtime trait, and the SDK runs on a local simulator that polls a mock carrier. The product is demoable end to end today. The day the testnet opens, the only thing that changes is the runtime adapter: one Rust impl and one SDK backend.
+Rialo testnet is not public yet, and the `rialo` crate on crates.io is still a stub. So the contract logic is frozen against a runtime trait, and the carrier polling plus settlement runs in the app API rather than on chain. The product is demoable end to end today, with real auth and persistence. The day the testnet opens, the settlement loop moves into the contract and the API becomes a thin read layer.
 
-Not done yet, on purpose: wallet connection, on-chain persistence, and the real Rialo runtime. All three wait on testnet access.
+Still on chain's critical path: real USDC custody and the on-chain reactive loop. Both wait on testnet access.

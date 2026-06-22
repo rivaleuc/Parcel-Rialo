@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { getClient } from "@/lib/client";
+import { makeClient } from "@/lib/client";
+import { useAuth } from "@/lib/auth";
 import type { Escrow } from "@parcel/sdk";
 
 export default function EscrowsPage() {
+  const { ready, userId, login, getToken } = useAuth();
+  const client = useMemo(() => makeClient(getToken), [getToken]);
   const [escrows, setEscrows] = useState<Escrow[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    if (!userId) return;
     let cancelled = false;
     async function load() {
-      const list = await getClient().listEscrows();
+      const list = await client.listEscrows().catch(() => []);
       if (!cancelled) {
         setEscrows(list);
         setLoaded(true);
@@ -24,7 +28,23 @@ export default function EscrowsPage() {
       cancelled = true;
       clearInterval(i);
     };
-  }, []);
+  }, [client, userId]);
+
+  if (ready && !userId) {
+    return (
+      <main>
+        <div className="card text-center py-16">
+          <h1 className="text-xl font-bold">Sign in to view your escrows</h1>
+          <p className="mt-2 text-sm text-[color:var(--color-ink-soft)]">
+            Each escrow is tied to the account that created it.
+          </p>
+          <button onClick={login} className="btn mt-5 inline-flex">
+            Sign in
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main>
