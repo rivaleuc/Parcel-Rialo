@@ -73,8 +73,8 @@ html.dark select.input {
 }
 
 html.dark .btn {
-  background: var(--color-ink);
-  color: var(--color-bg);
+  background: var(--color-accent);
+  color: #ffffff;
 }
 
 html.dark .pill,
