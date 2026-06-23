@@ -2,6 +2,10 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Providers } from "@/lib/auth";
 import { AuthButton } from "./auth-button";
+import { ThemeToggle } from "./theme-toggle";
+
+// Set the theme class before paint to avoid a flash of the wrong mode.
+const themeScript = `(function(){try{var t=localStorage.getItem("parcel.theme.v1");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}})();`;
 
 export const metadata: Metadata = {
   title: "Parcel — delivery-settled escrow on Rialo",
@@ -17,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
@@ -26,7 +31,10 @@ export default function RootLayout({
       </head>
       <body>
         <Providers>
-        <header className="border-b border-[color:var(--color-line)] bg-white/70 backdrop-blur-sm sticky top-0 z-10">
+        <header
+          className="border-b border-[color:var(--color-line)] backdrop-blur-sm sticky top-0 z-10"
+          style={{ background: "color-mix(in srgb, var(--color-surface) 75%, transparent)" }}
+        >
           <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
             <a href="/" className="flex items-center gap-2.5">
               <Logo />
@@ -40,6 +48,7 @@ export default function RootLayout({
                 New escrow
               </a>
               <AuthButton />
+              <ThemeToggle />
             </nav>
           </div>
         </header>

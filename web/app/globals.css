@@ -41,11 +41,45 @@ body {
   min-height: 100vh;
 }
 
+/* Dark mode: soft warm slate, not pure black. Overriding the design tokens
+   lets every component (cards, inputs, borders) adapt through var(). */
+html.dark {
+  --color-bg: #181c20;
+  --color-surface: #1f242a;
+  --color-ink: #e6ecf3;
+  --color-ink-soft: #aab6c6;
+  --color-ink-faint: #7c8896;
+  --color-line: #2c333b;
+  --color-line-soft: #242a31;
+  --color-accent: oklch(0.7 0.13 240);
+  --color-accent-ink: oklch(0.82 0.1 240);
+  --color-accent-wash: oklch(0.32 0.06 240);
+}
+
 html.dark,
 html.dark body {
-  background: #181c20;
-  color: #e6ecf3;
+  background: var(--color-bg);
+  color: var(--color-ink);
   background-image: none;
+}
+
+html.dark .card {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -16px rgba(0, 0, 0, 0.5);
+}
+
+html.dark .input,
+html.dark select.input {
+  background: var(--color-surface);
+}
+
+html.dark .btn {
+  background: var(--color-ink);
+  color: var(--color-bg);
+}
+
+html.dark .pill,
+html.dark .btn-ghost {
+  background: var(--color-surface);
 }
 
 h1,

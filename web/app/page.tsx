@@ -141,7 +141,7 @@ export default function Home() {
       </section>
 
       {/* Try the demo */}
-      <section className="card bg-gradient-to-b from-white to-[color:var(--color-accent-wash)]">
+      <section className="card bg-gradient-to-b from-[color:var(--color-surface)] to-[color:var(--color-accent-wash)]">
         <div className="eyebrow">Try the demo</div>
         <h2 className="mt-3 text-2xl font-bold tracking-tight">
           Create an escrow and watch it settle live.
@@ -168,7 +168,7 @@ export default function Home() {
 
 function CarrierHint({ code, desc }: { code: string; desc: string }) {
   return (
-    <div className="rounded-xl border border-[color:var(--color-line)] bg-white p-4">
+    <div className="rounded-xl border border-[color:var(--color-line)] bg-[color:var(--color-surface)] p-4">
       <span className="kbd">{code}</span>
       <p className="mt-2 text-[color:var(--color-ink-soft)]">{desc}</p>
     </div>
